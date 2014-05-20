@@ -1,4 +1,5 @@
-!/bin/bash
+#!/bin/bash
+#Author Volten
 echo "Do you need to add GatewayPorts clientspecified to your DMZ? (y/n)"
 read string
 case "$string" in
