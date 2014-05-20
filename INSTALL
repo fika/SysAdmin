@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sudo apt-get install clusterssh -y
+sudo apt-get install cowsay -y
