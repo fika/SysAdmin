@@ -14,6 +14,8 @@ touch /var/run/FulWall
 
 ( sleep 30 ; rm -f /var/run/FulWall && resetta ) &
 
+echo ""
+echo "(30 seconds to save)"
 read -r -p "Would you like to delete the FulWall file and save your changes to the default setup of iptables? [y/N] " response
 case $response in
 [yY][eE][sS]|[yY])
