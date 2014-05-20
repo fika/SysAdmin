@@ -1,37 +1,24 @@
 #!/bin/bash
-# Author Volten, Saint
-#. ./environment
-# Buggar som är kända,
-# När man har blivit utsparkad vill man bara se att reglerna är borta inte valet om att ta bort Fulwall
-echo -e "Please enter Iptables rule:"
-read iprule
-$iprule
-resetta() {
-iptables-restore restora.fil
-}
+#Author Volten
+echo -e "Enter the host you want to tunnel through"
+read hostip
+echo -e "\nEnter the port you want to forward with (example 2210)"
+read forport
+echo -e "\nEnter localhost or the ip of another host, like a printer"
+read localip
+echo -e "\nEnter the port of the service you will tunnel (example 22 for ssh)"
+read localport
+echo -e "\nEnter the username for the gateway"
+read user
 
-touch /var/run/FulWall
-
-( sleep 30 ; rm -f /var/run/FulWall && resetta ) &
-#
-# if true
-# ls /var/run/FulWall
-# do
-# resetta
-read -r -p "Would you like to delete the FulWall file and save your changes to the default setup of iptables? [y/N] " response
+ssh -N -f -R $hostip:$forport:$localip:$localport $user@$hostip
+echo "\nMake sure that the gateway has GatewayPorts clientspecified in sshd_config\n"
+read -r -p "Do you want to terminate the ssh tunnel? [y/N] " response
 case $response in
 [yY][eE][sS]|[yY])
-rm -f /var/run/FulWall
-cp restora.fil restora.back
-iptables-save > restora.fil
-echo -e "${SUCCESS}[*] Rule have been added to default setup of iptables ${END}"
-
+       killall ssh
 ;;
     *)
-        echo ""
-        echo "Your rule has not been added"
-        rm -f /var/run/FulWall
+        echo "\nGG"
 ;;
 esac
-exit 0
-
