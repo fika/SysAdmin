@@ -1,0 +1,99 @@
+#!/bin/bash
+
+#####							#####
+#####		https://github.com/fika/security	#####
+#####		Authors: Saint, Cosby, Norec		#####
+
+# ~~~~~~~~~~  Environment Setup ~~~~~~~~~~ #
+    NORMAL=`echo "\033[m"`
+    BLUE_TEXT=`echo "\033[36m"` #Blue
+    NUMBER=`echo "\033[33m"` #yellow
+    FGRED=`echo "\033[41m"`
+    RED_TEXT=`echo "\033[31m"` #Red
+    ENTER_LINE=`echo "\033[33m"`
+    INTRO_TEXT=`echo "\033[32m"` #green and white text
+    INFOS=`echo "\033[103;30m"` #yellow bg
+    SUCCESS=`echo "\033[102;30m"` #green bg
+    WARNING=`echo "\033[101;30m"` #red bg
+    WARP=`echo "\033[106;30m"` #lightblue bg
+    BLACK=`echo "\033[109;30m"` #SPACE bg
+    END=`echo "\033[0m"`
+# ~~~~~~~~~~  Environment Setup ~~~~~~~~~~ #
+
+#FOR INFO SEE GITHUB
+
+#ENTER MENU
+clear
+echo -e "${INFOS}YOU SHOULD RUN THIS AS ROOT.${END}"
+echo ""
+echo ""
+echo -e "${RED_TEXT}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~${END}"
+echo -e "${RED_TEXT}~~~~~~~~~~~~~~~~~~~~~~~~             MENU            ~~~~~~~~~~~~~~~~~~~~~~~~~${END}"
+echo -e "${RED_TEXT}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~${END}"
+echo ""
+echo ""
+echo -e "${BLUE_TEXT}1) Dhcpstarv - an application that targets the dhcp server and steals all ip addresses.${END}"
+echo ""
+echo -e "${BLUE_TEXT}2) Arpion - an application that uses arp poisoning between a victim and the gateway.${END}"
+echo ""
+echo -e "${BLUE_TEXT}3) Portscan - an application that scans for open ports on the target system${END}"
+echo ""
+echo -e "${BLUE_TEXT}4) Advanced Portscanner - Like portscan, but for several hosts.${END}"
+echo ""
+echo -e "${BLUE_TEXT}5) Dnskiller - an application that kills the resolution time of DNS servers.${END}"
+echo ""
+echo -e "${BLUE_TEXT}6) DNSAMP - an application that spoofs dns requests and sends them to your victim. Please note that you have to manually change addresses in dnsamp.py.${END}"
+echo ""
+echo -e "${BLUE_TEXT}7) Syslogflooder - an application that floods a syslog to bring down the system.${END}"
+echo ""
+echo -e "${BLUE_TEXT}8) Kill all running hackz.${END}"
+echo ""
+echo -e "${BLUE_TEXT}9) Quit the program${END}"
+
+# Look for options
+echo -e ""
+echo -e "${WARP}SELECT:${END}"
+read option
+
+
+
+if [ "$option" = "1" ]; then
+	#STARTING DHCPSTARV
+	bash dhcpstarv.sh
+
+elif [ "$option" = "2" ]; then
+	#STARTING ARPION
+	bash arpion.sh
+
+elif [ "$option" = "3" ]; then
+	#STARTING PORTSCAN
+	bash portscan.sh
+
+elif [ "$option" = "4" ]; then
+	#STARTING ADV_PORTSCAN
+	bash adv_portscan.sh
+
+elif [ "$option" = "5" ]; then
+	#STARTING DNSKILLER
+	bash dnskiller.sh
+
+elif [ "$option" = "6" ]; then
+	#STARTING DNSAMP
+	python dnsamp.py
+
+elif [ "$option" = "7" ]; then
+	#STARTING SYSLOGFLOODER
+	bash syslogflooder.sh
+
+elif [ "$option" = "8" ]; then
+	#KILL ALL
+	pkill -9 hping3
+	pkill -9 dsniff
+
+elif [ "$option" = "9" ]; then
+	echo "Exiting"
+	exit 0
+else
+echo "Please try again."
+exit 0
+fi
