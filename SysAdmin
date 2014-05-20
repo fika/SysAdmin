@@ -12,7 +12,6 @@
 
 #ENTER MENU
 clear
-echo -e "${INFOS}YOU SHOULD RUN THIS AS ROOT.${END}"
 echo ""
 echo ""
 echo -e "${RED_TEXT}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~${END}"
@@ -20,21 +19,21 @@ echo -e "${RED_TEXT}~~~~~~~~~~~~~~~~~~~~~~~~             MENU            ~~~~~~~
 echo -e "${RED_TEXT}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~${END}"
 echo ""
 echo ""
-echo -e "${BLUE_TEXT}1) Dhcpstarv - an application that targets the dhcp server and steals all ip addresses.${END}"
+echo -e "${BLUE_TEXT}1) Sample text here.${END}"
 echo ""
-echo -e "${BLUE_TEXT}2) Arpion - an application that uses arp poisoning between a victim and the gateway.${END}"
+echo -e "${BLUE_TEXT}2) Sample text here.${END}"
 echo ""
-echo -e "${BLUE_TEXT}3) Portscan - an application that scans for open ports on the target system${END}"
+echo -e "${BLUE_TEXT}3) Sample text here.${END}"
 echo ""
-echo -e "${BLUE_TEXT}4) Advanced Portscanner - Like portscan, but for several hosts.${END}"
+echo -e "${BLUE_TEXT}4) Sample text here.${END}"
 echo ""
-echo -e "${BLUE_TEXT}5) Dnskiller - an application that kills the resolution time of DNS servers.${END}"
+echo -e "${BLUE_TEXT}5) Sample text here.${END}"
 echo ""
-echo -e "${BLUE_TEXT}6) DNSAMP - an application that spoofs dns requests and sends them to your victim. Please note that you have to manually change addresses in dnsamp.py.${END}"
+echo -e "${BLUE_TEXT}6) Sample text here.${END}"
 echo ""
-echo -e "${BLUE_TEXT}7) Syslogflooder - an application that floods a syslog to bring down the system.${END}"
+echo -e "${BLUE_TEXT}7) Sample text here.${END}"
 echo ""
-echo -e "${BLUE_TEXT}8) Kill all running hackz.${END}"
+echo -e "${BLUE_TEXT}8) Kill all open tunnels.${END}"
 echo ""
 echo -e "${BLUE_TEXT}9) Quit the program${END}"
 
@@ -46,42 +45,41 @@ read option
 
 
 if [ "$option" = "1" ]; then
-	#STARTING DHCPSTARV
-	bash dhcpstarv.sh
+	#STARTING sample
+	bash sample
 
 elif [ "$option" = "2" ]; then
-	#STARTING ARPION
-	bash arpion.sh
+	#STARTING sample
+	bash sample
 
 elif [ "$option" = "3" ]; then
-	#STARTING PORTSCAN
-	bash portscan.sh
+	#STARTING sample
+	bash sample
 
 elif [ "$option" = "4" ]; then
-	#STARTING ADV_PORTSCAN
-	bash adv_portscan.sh
+	#STARTING sample
+	bash sample
 
 elif [ "$option" = "5" ]; then
-	#STARTING DNSKILLER
-	bash dnskiller.sh
+	#STARTING sample
+	bash sample
 
 elif [ "$option" = "6" ]; then
-	#STARTING DNSAMP
-	python dnsamp.py
+	#STARTING sample
+	python sample
 
 elif [ "$option" = "7" ]; then
-	#STARTING SYSLOGFLOODER
-	bash syslogflooder.sh
+	#STARTING sample
+	bash sample
 
 elif [ "$option" = "8" ]; then
 	#KILL ALL
-	pkill -9 hping3
-	pkill -9 dsniff
+	killall ssh
 
 elif [ "$option" = "9" ]; then
 	echo "Exiting"
 	exit 0
 else
 echo "Please try again."
-exit 0
+bash SysAdmin
 fi
