@@ -23,7 +23,7 @@ case $response in
 [yY][eE][sS]|[yY])
 rm -f /var/run/FulWall.sh
 cp restora.fil restora.back
-iptables-save >> restora.fil 
+iptables-save > restora.fil 
 ;;
     *)
 :
