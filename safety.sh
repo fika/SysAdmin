@@ -2,7 +2,7 @@
 #
 # Buggar som är kända, 
 # När man har blivit utsparkad vill man bara se att reglerna är borta inte valet om att ta bort Fulwall
-echo -n "Please enter Iptables rule "
+echo -n "Please enter Iptables rule:"
 read iprule
 $iprule
 resetta() {
