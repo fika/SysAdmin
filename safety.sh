@@ -1,6 +1,5 @@
 #!/bin/bash
 # Author Volten, Saint
-#. ./environment
 # Buggar som är kända,
 # När man har blivit utsparkad vill man bara se att reglerna är borta inte valet om att ta bort Fulwall
 echo -e "Please enter Iptables rule:"
