@@ -23,14 +23,25 @@ iptables -A INPUT -s 10.10.4.195/32 -p tcp -m tcp --dport 22 -j ACCEPT
 iptables -F
 
 resetta() {
-bash /home/student/standardfw.sh
+iptables-restore restora.fil
 echo 'regler borta'
 }
 
 touch /var/run/FulWall.sh
 
-( echo '60 sekunder kvar'; sleep 30  ; echo '30 sekunder kvar'; sleep 30 ; rm -f /var/run/FulWall && resetta ) &
-
+( sleep 30 ; rm -f /var/run/FulWall && resetta ) &
+read -r -p "Would you like to delete the FulWall file and save your changes to the default setup of iptables? [y/N] " response
+case $response in
+[yY][eE][sS]|[yY])
+rm -f /var/run/FulWall.sh
+cp restora.fil restora.back
+iptables-save >> restora.fil 
+;;
+    *)
+:
+;;
+esac
+fi
 #om du inte är utslängd	kan du nu bestämma att ta bort skiten å	spara till din standarfw
 
 exit 0
