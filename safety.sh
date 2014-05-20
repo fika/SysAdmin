@@ -1,5 +1,6 @@
 #!/bin/bash
 #
+. ./environment
 # Buggar som är kända, 
 # När man har blivit utsparkad vill man bara se att reglerna är borta inte valet om att ta bort Fulwall
 echo -n "Please enter Iptables rule:"
@@ -7,7 +8,6 @@ read iprule
 $iprule
 resetta() {
 iptables-restore restora.fil
-echo 'regler borta'
 }
 
 touch /var/run/FulWall.sh
@@ -29,6 +29,7 @@ iptables-save >> restora.fil
 :
 ;;
 esac
+echo -e "${SUCCESS}[*] Rule have been added to default setup of iptables ${END}"
 #om du inte är utslängd	kan du nu bestämma att ta bort skiten å	spara till din standarfw
 
 exit 0
