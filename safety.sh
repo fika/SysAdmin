@@ -12,7 +12,7 @@ iptables-restore restora.fil
 
 touch /var/run/FulWall
 
-( sleep 10 ; rm -f /var/run/FulWall && resetta ) &
+( sleep 30 ; rm -f /var/run/FulWall && resetta ) &
 
 read -r -p "Would you like to delete the FulWall file and save your changes to the default setup of iptables? [y/N] " response
 case $response in
