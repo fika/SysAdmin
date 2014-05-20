@@ -16,7 +16,7 @@ touch /var/run/FulWall.sh
 #
 # if true
 # ls /var/run/FulWall
-# dp
+# do
 # resetta
 read -r -p "Would you like to delete the FulWall file and save your changes to the default setup of iptables? [y/N] " response
 case $response in
