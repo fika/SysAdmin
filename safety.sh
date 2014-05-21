@@ -10,7 +10,6 @@ now=$(date +"%d-%m-%y_%H%M")
 outfile="iptables.$now"
 
 resetta() {
-#iptables-restore restora.fil #KOMMENTERAR OCH TESTAR MED DATE
 iptables-restore temp.fil
 }
 
