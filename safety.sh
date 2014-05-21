@@ -12,12 +12,9 @@ resetta() {
 iptables-restore < $outfile.fil
 }
 
-touch /var/run/FulWall
-
 echo -e "Skriv yes för att spara annars avbryts det om 10" 
 read -t 10 answer  
 if [ "$answer"  == "yes" ] ; then
-rm -f /var/run/FulWall
 cp restora.fil restora.back
 iptables-save > $outfile.fil
 echo -e "Rule has been added"
