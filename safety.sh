@@ -11,19 +11,14 @@ iptables-restore restora.fil
 
 touch /var/run/FulWall
 
-( sleep 30 ; rm -f /var/run/FulWall && resetta ) &
-
-read -r -p "Would you like to delete the FulWall file and save your changes to the default setup of iptables? [y/N] " response
-case $response in
-[yY][eE][sS]|[yY])
+echo -e "Skriv yes för att spara annars avbryts det om 10" 
+read -t 10 answer  
+if [ "$answer"  == "yes" ] ; then
 rm -f /var/run/FulWall
 cp restora.fil restora.back
 iptables-save > restora.fil
-echo -e "${SUCCESS}[*] Rule have been added to default setup of iptables and a backup has been created of the old ones.${END}"
-;;
-    *)
-echo ""
-echo "Your rule was not saved"
-;;
-esac
-exit 0
+echo -e "Rule has been added"
+else
+resetta
+echo -e "Rule has not been added due to timeout"
+fi
