@@ -15,7 +15,7 @@ ssh -N -f -R $hostip:$forport:$localip:$localport $user@$hostip
 echo ""
 echo "Make sure that the gateway has GatewayPorts clientspecified in sshd_config"
 echo ""
-read -r -p "Do you want to terminate the ssh tunnel? [y/N] " response
+read -t 20 -r -p "Do you want to terminate the ssh tunnel? [y/N] " response
 case $response in
 [yY][eE][sS]|[yY])
        killall ssh
