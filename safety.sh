@@ -1,5 +1,6 @@
 #!/bin/bash
 # Author Volten, Saint
+# LOVE HJÄLPTE OCKSÅ TILL
 
 folder="/var/bak"
 iptables-save > temp.fil
