@@ -2,11 +2,17 @@
 # Author Volten, Saint
 # LOVE HJÄLPTE OCKSÅ TILL
 
+#Måste köras som root
+if [[ $EUID -ne 0 ]]; then
+echo -e "${WARNING}Script must be run as root!${END}"
+exit 1
+else
+
 #Funktionen
 restore() {
 iptables-restore $temp
 }
-
+##
 #Variablar
 folder="/var/bak"
 mkdir -p $folder
@@ -15,8 +21,8 @@ mkdir -p $old
 temp="temp"
 now=$(date +"%d-%m-%y_%H%M_%S")
 outfile="iptables.$now"
-#
-
+##
+#Scriptet
 iptables-save > $temp
 
 echo -e "Enter Iptables rule:"
@@ -37,3 +43,5 @@ case $response in
         echo -e "\nRule has not been added"
 ;;
 esac
+
+fi
