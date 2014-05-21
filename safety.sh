@@ -4,9 +4,12 @@
 echo -e "Please enter Iptables rule:"
 read iprule
 $iprule
+now=$(date +"%d-%m-%y_%H%M")
+outfile="backup.$now"
 
 resetta() {
-iptables-restore restora.fil
+#iptables-restore restora.fil #KOMMENTERAR OCH TESTAR MED DATE
+iptables-restore < $outfile.fil
 }
 
 touch /var/run/FulWall
@@ -16,7 +19,7 @@ read -t 10 answer
 if [ "$answer"  == "yes" ] ; then
 rm -f /var/run/FulWall
 cp restora.fil restora.back
-iptables-save > restora.fil
+iptables-save > $outfile.fil
 echo -e "Rule has been added"
 else
 resetta
