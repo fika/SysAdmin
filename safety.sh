@@ -2,23 +2,26 @@
 # Author Volten, Saint
 # LOVE HJÄLPTE OCKSÅ TILL
 
+#Funktionen
+restore() {
+iptables-restore $temp
+}
+#
+#Variablar
 mkdir -p /var/bak/old
 folder="/var/bak"
 temp="/var/bak/temp.fil"
-iptables-save > $temp
-
-echo -e "Please enter Iptables rule:"
-read iprule
-$iprule
 now=$(date +"%d-%m-%y_%H%M")
 outfile="iptables.$now"
+#
+iptables-save > $temp
 
-resetta() {
-iptables-restore $temp
-}
+echo -e "Enter Iptables rule:"
+read iprule
+$iprule
 
-echo -e "Skriv yes för att spara annars avbryts det om 10"
-read -t 10 answer
+echo -e "Vill du spara (yes) annars avbryts regeln om 20 sec "
+read -t 20 answer
 
 if [ "$answer"  == "yes" ] ; then
 
@@ -29,7 +32,7 @@ echo -e "Rule has been added"
 
 else
 
-resetta
+restore
 echo -e "Rule has not been added due to timeout"
 rm $temp
 
