@@ -1,6 +1,8 @@
 #!/bin/bash
 # Author Volten, Saint
 
+current_table=$(iptables-save)
+
 echo -e "Please enter Iptables rule:"
 read iprule
 $iprule
@@ -9,14 +11,13 @@ outfile="iptables.$now"
 
 resetta() {
 #iptables-restore restora.fil #KOMMENTERAR OCH TESTAR MED DATE
-iptables-restore < $outfile.fil
+iptables-restore < $current_table
 }
 
 echo -e "Skriv yes för att spara annars avbryts det om 10" 
 read -t 10 answer  
 if [ "$answer"  == "yes" ] ; then
-cp $outfile.fil $outfile.bak
-iptables-save > $outfile.fil
+iptables-save > $outfile.back
 echo -e "Rule has been added"
 else
 resetta
