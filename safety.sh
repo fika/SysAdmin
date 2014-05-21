@@ -23,20 +23,17 @@ echo -e "Enter Iptables rule:"
 read iprule
 $iprule
 
-echo -e "Vill du spara (yes) annars avbryts regeln om 20 sec "
-read -t 20 answer
+read -t 20 -r -p "Do you want to save the rule? [y/N]" response
+case $response in
+[yY][eE][sS]|[yY])
+        rm $temp
+        mv $folder/* $old/ 2> /dev/null
+        iptables-save > $folder/$outfile
+        echo -e "\nRule has been added"
 
-if [ "$answer"  == "yes" ] ; then
-
-rm $temp
-mv $folder/* $old/ 2> /dev/null
-iptables-save > $folder/$outfile
-echo -e "Rule has been added"
-
-else
-
-restore
-echo -e "Rule has not been added due to timeout"
-rm $temp
-
-fi
+;;
+    *)
+        restore
+        echo -e "\nRule has not been added"
+;;
+esac
