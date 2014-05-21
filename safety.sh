@@ -12,8 +12,8 @@ folder="/var/bak"
 mkdir -p $folder
 old="/var/bak/old"
 mkdir -p $old
-temp="$folder/temp"
-now=$(date +"%d-%m-%y_%H%M")
+temp="temp"
+now=$(date +"%d-%m-%y_%H%M_%S")
 outfile="iptables.$now"
 #
 
@@ -28,9 +28,9 @@ read -t 20 answer
 
 if [ "$answer"  == "yes" ] ; then
 
-mv $folder/iptables.* $old/ 2> /dev/null
-iptables-save > $folder/$outfile
 rm $temp
+mv $folder/* $old/ 2> /dev/null
+iptables-save > $folder/$outfile
 echo -e "Rule has been added"
 
 else
