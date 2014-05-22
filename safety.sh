@@ -50,18 +50,19 @@ else
 #Funktionen
 restore() {
 iptables-restore $temp
+rm -f $temp
 }
 
 iptables-save >> $temp
 
-echo -e "Enter Iptables rule:"
+echo -e "\nEnter Iptables rule:"
 read iprule
 $iprule
 
 read -t 20 -r -p "Do you want to save the rule? [y/N] " response
 case $response in
 [yY][eE][sS]|[yY])
-        rm $temp
+        rm -f $temp
         mv $folder/* $old/ 2> /dev/null
         iptables-save > $folder/$outfile
         echo -e "\nRule has been added"
