@@ -52,7 +52,7 @@ restore() {
 iptables-restore $temp
 }
 
-iptables-save > $temp
+iptables-save >> $temp
 
 echo -e "Enter Iptables rule:"
 read iprule
