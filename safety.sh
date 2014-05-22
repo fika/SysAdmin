@@ -1,6 +1,5 @@
 #!/bin/bash
-# Author Volten, Saint
-# LOVE HJÄLPTE OCKSÅ TILL
+# Author Volten
 
 #Variablar
 firsttime="0"
@@ -24,24 +23,24 @@ echo -e "What folder do you want to move the old iptables files? (example /var/b
 read instold
 mkdir -p $instold
 
-sed -i '0,/firsttime="0"/s//firsttime="1"/' saftey.sh
+sed -i '0,/firsttime="0"/s//firsttime="1"/' $0
 
 sed -i "7i\
-folder=$instfolder" saftey.sh
+folder=$instfolder" $0
 
 sed -i "8i\
-old=$instold" saftey.sh
+old=$instold" $0
 
 read -r -p "Do you want to save your current iptables? [y/N] " response
 case $response in
 [yY][eE][sS]|[yY])
         echo -e "\nInstall complete, reloading the script"
         iptables-save > $instfolder/$outfile
-        bash saftey.sh
+        bash $0
 ;;
     *)
         echo -e "\nInstall complete, reloading the script"
-        bash saftey.sh
+        bash $0
 ;;
 esac
 
