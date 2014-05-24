@@ -57,7 +57,12 @@ iptables-save >> $temp
 
 echo -e "\nEnter Iptables rule:"
 read iprule
-$iprule
+$iprule 2> /dev/null
+if [[ $? -ne 0 ]] ; then
+        echo -e "\n There is an error in your rule, try again"
+        sleep 5
+        bash $0
+fi
 
 read -t 20 -r -p "Do you want to save the rule? [y/N] " response
 case $response in
