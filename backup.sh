@@ -68,7 +68,7 @@ function send_backup() {
 		#Check if send was complete
 		check_send_obj
 	if [ $? != 0 ]; then
-		#add to fail que & remove remove objects
+		#add to fail que & remove remote objects
 		add_fail_obj
 	else
 		#if md5 checks out, remove local file
@@ -87,7 +87,8 @@ function failed_backup() {
 		#Check if send was complete
 		check_send_obj
 	if [ $? != 0 ]; then
-		#logg second failed attempt
+		#remove remote and logg second failed attempt
+		remove_remote_obj
 		echo "fail"
 	else
 		#if md5 checks out, remove local file
