@@ -99,8 +99,8 @@ while [ $# -ge 1 ];do
             ip="$2"
             ;;
         -d | --db) #Databases to backup                                                                                                                                                                        
-        	dbs[$n]="$2"
-        	let n++
+            dbs[$n]="$2"
+            let n++
             ;;            
         *)
             check_usage $1
