@@ -17,6 +17,16 @@ function check_send_obj() {
 		#ssh and compares md5 files
 		$ssh "md5sum $dbsend > $dbsend.md5"
 		$ssh "cat $dbsend.md5" | diff - "$dbsend.md5"
+		#checks md5, and if its first or second time it runs
+		if [ $? != 0 ] && [ $status == 0 ]; then
+			add_fail_obj
+		elif [ $? != 0 ] && [ $status == 1 ]; then
+			echo "fail"
+		else
+			#if md5 checks out, remove local file and check if there is a backup old enough to remove
+			remove_local_obj
+			remove_old_obj
+		fi
 }
 
 function send_backup_obj() {
@@ -51,47 +61,40 @@ function dump_database_obj() {
 		set_date
 		dbsend=$dbfilepath/$dbname.$date
 		touch $dbsend
-		md5sum $dbsend > $dbsend.md5	
+		md5sum $dbsend > $dbsend.md5
+}
+
+function check_dump() {
+	#Still to come, check if dump is valid. Similar to the check_send if statement
+	#Removes completed dump from status file
+		sed -i '/'$dbname'/d' status.tmp
 }
 
 function send_backup() {
-	#for dbname in "${dbs[@]}"; do (old for loop, keep for backup)
 	for dbname in ${dbs[*]}; do
+		status=0
 		#dump database
 		dump_database_obj
-		#before send, check if dump is valid (still to come)
+		#check the dump
+		check_dump
 		#Sending database
 		send_backup_obj
 		#Check if send was complete
 		check_send_obj
-	if [ $? != 0 ]; then
-		#add to fail que & remove remove objects
-		add_fail_obj
-	else
-		#if md5 checks out, remove local file and check if there is a backup old enough to remove
-		remove_local_obj
-		remove_old_obj
-		fi
 	done
 }
 
 function failed_backup() {
 	for dbname in ${failed[*]}; do
+		status=1
 		#dump database
 		dump_database_obj
-		#before send, check if dump is valid (still to come)
+		#check the dump
+		check_dump
 		#Sending database
 		send_backup_obj
 		#Check if send was complete
 		check_send_obj
-	if [ $? != 0 ]; then
-		#logg second failed attempt
-		echo "fail"
-	else
-		#if md5 checks out, remove local file and check if there is a backup old enough to remove
-		remove_local_obj
-		remove_old_obj
-		fi
 	done
 }
 
@@ -117,6 +120,9 @@ while [ $# -ge 1 ];do
     shift 2
 done
 
+#Adds array to a status file
+printf "%s\n" ${dbs[*]} > status.tmp
+
 #Ex ./script.sh --type days --find 18 --ip 192.168.122.53 --db "db1 db2 db3 db4"
 
 target="vivo@$ip:"
@@ -129,3 +135,13 @@ n=0
 
 send_backup
 failed_backup
+
+#Checks if status file is empty, temp echos
+if [ ! -s status.tmp ]; then
+	echo "Status file was empty, no backups remain in loop"
+	rm status.tmp
+else
+	echo "Status file was not empty, report to nagios"
+	cat status.tmp
+	rm status.tmp
+fi
