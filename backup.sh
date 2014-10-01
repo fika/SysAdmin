@@ -102,7 +102,7 @@ while getopts d:t:b: GET; do
 		backup_type="$2" ;;
       t)
 		#How old can remote backups be, number (Ex -t 18)
-        days="$4" ;;
+        	days="$4" ;;
       d)
 		#Adds everything in -d " " to the array. (Ex -d "db1 db2 db3")
 		dbs[$n]="$6"
