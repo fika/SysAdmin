@@ -1,16 +1,8 @@
 #!/bin/bash
 
-target="vivo@192.168.122.53:"
-ssh="ssh vivo@192.168.122.53"
-folder="/home/vivo/backups/"
-scp="scp -q "
-
-i=0
-n=0
-
 function set_date() {
-		date=`/bin/date '+%F_%T'`
-		#date_log=`/bin/date '+%b %d %R:%S'`
+		date=`date '+%F_%T'`
+		#date_log=`date '+%b %d %R:%S'`
 }
 
 function add_fail_obj() {
@@ -95,21 +87,37 @@ function failed_backup() {
 	done
 }
 
-while getopts d:t:b: GET; do
-    case "$GET" in
-      b)
-		#What backup are you running, days, weeks, months, or years (Ex -b days)
-		backup_type="$2" ;;
-      t)
-		#How old can remote backups be, number (Ex -t 18)
-        	days="$4" ;;
-      d)
-		#Adds everything in -d " " to the array. (Ex -d "db1 db2 db3")
-		dbs[$n]="$6"
-        let n++
-        continue  ;;
+while [ $# -ge 1 ];do
+    case $1 in
+        -t | --type) #What type of backup, days, weeks, months, years                                                                                                                                                                        
+            backup_type="$2"
+            ;;
+        -f | --find) #How old together with type, like 18 for: days 18                                                                                                                                                                      
+            days="$2"
+            ;;
+        -i | --ip) #The remote IP                                                                                                                                                       
+            ip="$2"
+            ;;
+        -d | --db) #Databases to backup                                                                                                                                                                        
+        	dbs[$n]="$2"
+        	let n++
+            ;;            
+        *)
+            check_usage $1
+            ;;
     esac
+    shift 2
 done
+
+#Ex ./script.sh --type days --find 18 --ip 192.168.122.53 --db "db1 db2 db3 db4"
+
+target="vivo@$ip:"
+ssh="ssh vivo@$ip"
+folder="/home/vivo/backups/"
+scp="scp -q "
+
+i=0
+n=0
 
 send_backup
 failed_backup
