@@ -35,13 +35,21 @@ function remove_remote_obj() {
 }
 
 function remove_old_obj() {
+		#Use find to remove old backups on remote server
 		$ssh "find $folder -name "*.$(date -d "$days $backup_type ago" "+%F")*" -exec rm {} \;"
 }
 
 function dump_database_obj() {
-		#dumping database and creating md5sum
+		#Creating folders if needed
+		dbfilepath=$folder$dbname
+		mkdir="mkdir -p ${dbfilepath}"
+	if [ ! -d ${dbfilepath} ]; then
+		$mkdir
+    	$ssh "$mkdir"
+    fi
+    	#dumping database and creating md5sum
 		set_date
-		dbsend=$folder$dbname.$date
+		dbsend=$dbfilepath/$dbname.$date
 		touch $dbsend
 		md5sum $dbsend > $dbsend.md5	
 }
@@ -88,23 +96,23 @@ function failed_backup() {
 }
 
 while [ $# -ge 1 ];do
-    case $1 in
-        -t | --type) #What type of backup, days, weeks, months, years                                                                                                                                                                        
-            backup_type="$2"
-            ;;
-        -f | --find) #How old together with type, like 18 for: days 18                                                                                                                                                                      
-            days="$2"
-            ;;
-        -i | --ip) #The remote IP                                                                                                                                                       
-            ip="$2"
-            ;;
-        -d | --db) #Databases to backup                                                                                                                                                                        
-            dbs[$n]="$2"
-            let n++
-            ;;            
-        *)
-            check_usage $1
-            ;;
+	case $1 in
+	-t | --type) #What type of backup, days, weeks, months, years                                                                                                                                                                        
+		backup_type="$2"
+		;;
+	-f | --find) #How old together with type, like 18 for: days 18                                                                                                                                                                      
+		days="$2"
+		;;
+	-i | --ip) #The remote IP                                                                                                                                                       
+		ip="$2"
+		;;
+	-d | --db) #Databases to backup                                                                                                                                                                        
+		dbs[$n]="$2"
+		let n++
+		;;
+	*)
+		check_usage $1
+		;;
     esac
     shift 2
 done
