@@ -9,6 +9,7 @@ function settings() {
 		i=0
 		n=0
 		f=0
+		s=0
 }
 
 function set_date() {
@@ -37,9 +38,15 @@ function backup_type_obj() {
 function add_fail_obj() {
 		#removes remote objects and add failed items to fail array
 		remove_remote_obj
+	if [ is_ftp != 0 ]; then
+		ftp_failed[$s]=$dbname
+		let s++
+		continue
+	else
 		failed[$i]=$dbname
 		let i++
 		continue
+	fi
 }
 
 function check_send_obj() {
@@ -103,7 +110,7 @@ function check_status_file() {
 		rm $status_file
 	else
 		echo "Status file was not empty, report to nagios"
-		cat $status_file
+		#Send to nagios..
 		rm $status_file
 	fi
 }
@@ -146,7 +153,7 @@ function send_backup() {
 }
 
 function failed_backup() {
-	for dbname in ${failed[*]}; do
+	for dbname in $fail_array; do
 		#Status is used for if statement to see if its first or second time backup runs
 		status=1
 		#dump database
@@ -189,6 +196,7 @@ printf "%s\n" ${dbs[*]} > $status_file
 
 if [ ${#ftp[@]} -gt 0 ]; then
     send_array="${ftp[*]}"
+    fail_array="${ftp_failed[*]}"
     is_ftp=1
     send_backup
 	failed_backup
@@ -196,6 +204,7 @@ fi
 
 if [ ${#dbs[@]} -gt 0 ]; then
     send_array="${dbs[*]}"
+    fail_array="${failed[*]}"
     is_ftp=0
     send_backup
 	failed_backup
