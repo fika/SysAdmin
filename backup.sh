@@ -39,8 +39,6 @@ function failed_backup() {
 	done
 }
 
-#### Second tier functions, called mainly from first tier ####
-
 function settings() {
 		#User is current user who runs script, and remote serveruser
 		target="$USER@$ip:"
@@ -53,6 +51,8 @@ function settings() {
 		n=0
 		f=0
 }
+
+#### Second tier functions, called mainly from first tier ####
 
 function backup_type_obj() {
 	#This will determine, how find will look for files
