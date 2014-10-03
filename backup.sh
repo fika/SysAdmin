@@ -17,7 +17,6 @@ function settings() {
 }
 
 function dump_data() {
-		set_name_obj
 		dump_database_obj
 		check_dump_obj
 		send_dump_obj
@@ -29,16 +28,19 @@ function send_backup() {
 	for dbname in $send_array; do
 		#Status is used for if statement to see if its first or second time backup runs
 		status=0
+		#Set name standards in first so its same throughout whole script
+		set_name_obj
 		dump_data
 	done
 }
 
-function failed_backup() {
+function failed_dump() {
 	for dbname in ${failed[*]}; do
 		status=1
 		dump_data
 	done
 }
+
 
 ##############################################################
 #### Second tier functions, called mainly from first tier ####
@@ -54,7 +56,7 @@ function check_log() {
 
 function send_log() {
 		set_date
-		echo "$date_log | $log_entry" >> $log_file
+		echo -e "$date_log | $log_entry" >> $log_file
 }
 
 function check_status_file() {
@@ -91,7 +93,7 @@ function set_name_obj() {
 
 function set_date() {
 		date=`date '+%F_%T'`
-		date_log=`date '+%Y %b %d %R:%S'`
+		date_log=`date '+%b %d %R:%S'`
 }
 
 function dump_database_obj() {
@@ -101,8 +103,10 @@ function dump_database_obj() {
 		$mkdir
     	$ssh "$mkdir"
     fi
-		touch $dbsend
+    if [ ! -s $dbsend ]; then
+		echo "temp" > $dbsend
 		md5sum $dbsend > $dbsend_md5
+	fi
 }
 
 function check_dump_obj() {
@@ -121,9 +125,9 @@ function check_send_obj() {
 	if [ $? != 0 ]; then
 			case $status in
 				0)
-					add_fail_obj ;;
+					add_fail_md5_obj ;;
 				1)
-				log_entry="Md5 check failed twice on $dbsend" send_log ;;
+				log_entry="Md5 check failed twice on $db" send_log ;;
 			esac
 	else
 		if [ $is_ftp == 1 ]; then
@@ -139,15 +143,14 @@ function check_send_obj() {
 #### Third tier functions, called mainly from second tier ####
 ##############################################################
 
-function add_fail_obj() {
+function add_fail_md5_obj() {
 		#removes remote objects and add failed items to fail array
-		log_entry="Md5 check failed, resending $dbsend" send_log 
+		log_entry="Md5 check failed on $db, removing remote and retrying" send_log
 		remove_remote_obj
 		failed[$i]=$db
 		let i++
 		continue
 }
-
 
 function set_ftp_settings() {
 		#Chown and chmod remote ftp file
@@ -160,6 +163,11 @@ function remove_local_obj() {
 		find $dbfilepath -name "*.done" -exec rm {} \;
 		mv "$dbsend" "$dbsend"".done"
 		mv "$dbsend_md5" "$dbsend_md5"".done"
+}
+
+function remove_local_fail_obj() {
+		#Remove remote objects
+		rm $dbsend
 }
 
 function remove_remote_obj() {
@@ -226,26 +234,28 @@ check_status_file
 #Checks if there is a process already running
 prev_script_run
 
+function run_backup() {
+	send_backup
+	failed_dump
+	failed=
+}
+
 if [ ${#ftp[@]} -gt 0 ]; then
 	#Adds array to a status file
 	printf "%s\n" ${ftp[*]} >> $status_file
-    	send_array="${ftp[*]}"
+    send_array="${ftp[*]}"
 	is_ftp="1"
-	send_backup
-	failed_backup
-	failed=
+	run_backup
 fi
 
 if [ ${#dbs[@]} -gt 0 ]; then
 	#Adds array to a status file
 	printf "%s\n" ${dbs[*]} >> $status_file
-    	send_array="${dbs[*]}"
+    send_array="${dbs[*]}"
 	is_ftp="0"
-	send_backup
-	failed_backup
-	failed=
+	run_backup
 fi
 
 #Checks if status file is empty
 check_status_file
-log_entry="Script ended" send_log
+log_entry="Script ended \n --------------------------------------" send_log
