@@ -39,7 +39,7 @@ function failed_backup() {
 	done
 }
 
-#### Second tier functions ####
+#### Second tier functions, called mainly from first tier ####
 
 function settings() {
 		#User is current user who runs script, and remote serveruser
@@ -76,6 +76,7 @@ function backup_type_obj() {
 }
 
 function check_status_file() {
+		#Checks if there is a previous status file
 	if [ ! -s $status_file ]; then
 		echo "Status file was empty, no backups remain in loop"
 		
@@ -99,6 +100,7 @@ function prev_script_run() {
 }
 
 function set_name_obj() {
+		#Sets namestandards
 		db="$dbname"
 		chown_user="${db%_*}:${db%_*}"
 	if [ $is_ftp == 1 ]; then
@@ -164,7 +166,7 @@ function check_send_obj() {
 
 }
 
-#### Third tier functions that second tier use ####
+#### Third tier functions, called mainly from second tier ####
 
 function add_fail_obj() {
 		#removes remote objects and add failed items to fail array
@@ -176,6 +178,7 @@ function add_fail_obj() {
 
 
 function set_ftp_settings() {
+		#Chown and chmod remote ftp file
 		$ftp_ssh "sudo chown $chown_user $dbsend* ; sudo chmod 400 $dbsend*"
 }
 
@@ -199,10 +202,11 @@ function remove_old_obj() {
 }
 
 #### Main script that calls functions ####
+#### Ex running, ./script --type weekly --ip 10.10.10.10 --db "customer1_db customer2_db" --ftp "customer3_db"
 
 while [ $# -ge 1 ];do
 	case $1 in
-	-t | --type) #What type of backup, days, weeks, months, years ||| New, daily, weekly, montly                                                                                                                                                                        
+	-t | --type) #New, daily, weekly, montly                                                                                                                                                                        
 		backup="$2" ;;
 	-i | --ip) #The remote IP                                                                                                                                                       
 		ip="$2" ;;
