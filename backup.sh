@@ -54,27 +54,6 @@ function settings() {
 
 #### Second tier functions, called mainly from first tier ####
 
-function backup_type_obj() {
-	#This will determine, how find will look for files
-	case $backup in
-        	d | daily )
-                backup_type="days"
-                rm_time="14" ;;
-        	w | weekly )
-                backup_type="weeks"
-                rm_time="8" ;;
-        	m | montly )
-                backup_type="months"
-                rm_time="18" ;;
-        	y | yearly )
-                backup_type="years"
-                rm_time="10" ;;
-        	z | zero ) #This is for temporary file-remove
-                backup_type="days"
-                rm_time="0" ;;
-	esac
-}
-
 function check_status_file() {
 		#Checks if there is a previous status file
 	if [ ! -s $status_file ]; then
@@ -199,6 +178,27 @@ function remove_old_obj() {
 		backup_type_obj
 		#Use find to remove old backups on remote server
 		$ssh "find $dbfilepath -name "*.$(date -d "$rm_time $backup_type ago" "+%F")*" -exec rm {} \;"
+}
+
+function backup_type_obj() {
+	#This will determine, how find will look for files
+	case $backup in
+        	d | daily )
+                backup_type="days"
+                rm_time="14" ;;
+        	w | weekly )
+                backup_type="weeks"
+                rm_time="8" ;;
+        	m | montly )
+                backup_type="months"
+                rm_time="18" ;;
+        	y | yearly )
+                backup_type="years"
+                rm_time="10" ;;
+        	z | zero ) #This is for temporary file-remove
+                backup_type="days"
+                rm_time="0" ;;
+	esac
 }
 
 #### Main script that calls functions ####
