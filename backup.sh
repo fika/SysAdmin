@@ -1,8 +1,11 @@
 #!/bin/bash
 
 function settings() {
-		target="vivo@$ip:"
-		ssh="ssh vivo@$ip"
+		user="vivo"
+		chown_user="viktor:viktor"
+		target="$user@$ip:"
+		ssh="ssh $user@$ip"
+		ftp_ssh="ssh -qt $user@$ip"
 		folder="/home/vivo/backups/"
 		scp="scp -q "
 		status_file="/tmp/status.tmp"
@@ -31,6 +34,9 @@ function backup_type_obj() {
         	y | yearly )
                 backup_type="years"
                 rm_time="10" ;;
+        	z | zero ) #This is for temporary file-remove
+                backup_type="days"
+                rm_time="0" ;;
 	esac
 }
 
@@ -47,7 +53,7 @@ function check_send_obj() {
 		$ssh "md5sum $dbsend > $dbsend_md5"
 		$ssh "cat $dbsend_md5" | diff - "$dbsend_md5"
 		#checks md5, and if its first or second time it runs
-	if [ $status == "0" ]; then
+	if [ $? != 0 ]; then
 			case $status in
 				0)
 					add_fail_obj ;;
@@ -55,12 +61,20 @@ function check_send_obj() {
 				echo "Backup failed two times, report to nagios" ;;
 			esac
 	else
+		#If the target is ftp, mod file with ftp settings
+		if [ $is_ftp == 1 ]; then
+			set_ftp_settings
+		fi			
 		#When all is complete, remove previous local backup and mark this one as done
 		remove_local_obj
 		#When all is complete, remove old enough objects on remote
-		remove_old_obj			
+		remove_old_obj
 	fi
 
+}
+
+function set_ftp_settings() {
+		$ftp_ssh "sudo chown $chown_user $dbsend* ; sudo chmod 400 $dbsend*"
 }
 
 function send_backup_obj() {
@@ -144,6 +158,7 @@ function send_backup() {
 		#Check if send was complete
 		echo "This is send_backup func" "Ftp is set to $is_ftp"
 		check_send_obj
+		echo $dbname "was run from send_backup"
 	done
 }
 
@@ -158,7 +173,7 @@ function failed_backup() {
 		#Sending database
 		send_backup_obj
 		#Check if send was complete
-		echo "This is failed_backup func" "Ftp is set to $is_ftp & db is $dbname"
+		echo "This is failed_backup func" "Ftp is set to $is_ftp"
 		check_send_obj
 		echo $dbname "was run from failed"
 	done
