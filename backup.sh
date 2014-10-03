@@ -9,7 +9,6 @@ function settings() {
 		i=0
 		n=0
 		f=0
-		s=0
 }
 
 function set_date() {
@@ -38,15 +37,9 @@ function backup_type_obj() {
 function add_fail_obj() {
 		#removes remote objects and add failed items to fail array
 		remove_remote_obj
-	if [ is_ftp != 0 ]; then
-		ftp_failed[$s]=$dbname
-		let s++
-		continue
-	else
 		failed[$i]=$dbname
 		let i++
 		continue
-	fi
 }
 
 function check_send_obj() {
@@ -54,7 +47,7 @@ function check_send_obj() {
 		$ssh "md5sum $dbsend > $dbsend_md5"
 		$ssh "cat $dbsend_md5" | diff - "$dbsend_md5"
 		#checks md5, and if its first or second time it runs
-	if [ $? != 0 ]; then
+	if [ $status == "0" ]; then
 			case $status in
 				0)
 					add_fail_obj ;;
@@ -107,12 +100,13 @@ function prev_script_run() {
 function check_status_file() {
 	if [ ! -s $status_file ]; then
 		echo "Status file was empty, no backups remain in loop"
-		rm $status_file
+		
 	else
 		echo "Status file was not empty, report to nagios"
-		#Send to nagios..
-		rm $status_file
+
 	fi
+		rm $status_file 2> /dev/null
+
 }
 
 function dump_database_obj() {
@@ -148,12 +142,13 @@ function send_backup() {
 		#Sending database
 		send_backup_obj
 		#Check if send was complete
+		echo "This is send_backup func" "Ftp is set to $is_ftp"
 		check_send_obj
 	done
 }
 
 function failed_backup() {
-	for dbname in $fail_array; do
+	for dbname in ${failed[*]}; do
 		#Status is used for if statement to see if its first or second time backup runs
 		status=1
 		#dump database
@@ -163,7 +158,9 @@ function failed_backup() {
 		#Sending database
 		send_backup_obj
 		#Check if send was complete
+		echo "This is failed_backup func" "Ftp is set to $is_ftp & db is $dbname"
 		check_send_obj
+		echo $dbname "was run from failed"
 	done
 }
 
@@ -176,7 +173,7 @@ while [ $# -ge 1 ];do
 	-d | --db) #Databases to backup                                                                                                                                                                        
 		dbs[$n]="$2"
 		let n++ ;;
-	-f | --ftp) #The remote IP                                                                                                                                                       
+	-f | --ftp) #Databases to backup to ftp                                                                                                                                                      
 		ftp[$f]="$2"
 		let f++;;
 	*)
@@ -188,26 +185,32 @@ done
 #Importing settings
 settings
 
+#Checks if there is a previous status file
+check_status_file
+
 #Checks if there is a process already running
 prev_script_run
 
-#Adds array to a status file
-printf "%s\n" ${dbs[*]} > $status_file
-
 if [ ${#ftp[@]} -gt 0 ]; then
-    send_array="${ftp[*]}"
-    fail_array="${ftp_failed[*]}"
-    is_ftp=1
-    send_backup
+	#Adds array to a status file
+	printf "%s\n" ${ftp[*]} >> $status_file
+    	send_array="${ftp[*]}"
+    	is_ftp="1"
+    	send_backup
 	failed_backup
+	#This will empty the fail array
+	failed=
 fi
 
 if [ ${#dbs[@]} -gt 0 ]; then
-    send_array="${dbs[*]}"
-    fail_array="${failed[*]}"
-    is_ftp=0
-    send_backup
+	#Adds array to a status file
+	printf "%s\n" ${dbs[*]} >> $status_file
+    	send_array="${dbs[*]}"
+    	is_ftp="0"
+    	send_backup
 	failed_backup
+	#This will empty the fail array
+	failed=
 fi
 
 #Checks if status file is empty, temp echos
