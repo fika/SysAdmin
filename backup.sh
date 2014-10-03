@@ -1,22 +1,57 @@
 #!/bin/bash
 
+### First Tier functions
+function send_backup() {
+	for dbname in $send_array; do
+		#Status is used for if statement to see if its first or second time backup runs
+		status=0
+		#Sets namestandards
+		set_name_obj
+		#dump database
+		dump_database_obj
+		#check the dump
+		check_dump_obj
+		#Sending database
+		send_backup_obj
+		#Check if send was complete
+		echo "This is send_backup func" "Ftp is set to $is_ftp"
+		check_send_obj
+		echo $db "was run from send_backup"
+	done
+}
+
+function failed_backup() {
+	for dbname in ${failed[*]}; do
+		#Status is used for if statement to see if its first or second time backup runs
+		status=1
+		#Sets namestandards
+		set_name_obj
+		#dump database
+		dump_database_obj
+		#check the dump
+		check_dump_obj
+		#Sending database
+		send_backup_obj
+		#Check if send was complete
+		echo "This is failed_backup func" "Ftp is set to $is_ftp"
+		check_send_obj
+		echo $db "was run from failed"
+	done
+}
+
+#### Second tier functions ####
+
 function settings() {
-		user="vivo"
-		chown_user="viktor:viktor"
-		target="$user@$ip:"
-		ssh="ssh $user@$ip"
-		ftp_ssh="ssh -qt $user@$ip"
-		folder="/home/vivo/backups/"
+		#User is current user who runs script, and remote serveruser
+		target="$USER@$ip:"
+		ssh="ssh $USER@$ip"
+		ftp_ssh="ssh -qt $USER@$ip"
+		folder="/home/$USER/backups/"
 		scp="scp -q "
 		status_file="/tmp/status.tmp"
 		i=0
 		n=0
 		f=0
-}
-
-function set_date() {
-		date=`date '+%F_%T'`
-		#date_log=`date '+%b %d %R:%S'`
 }
 
 function backup_type_obj() {
@@ -40,12 +75,68 @@ function backup_type_obj() {
 	esac
 }
 
-function add_fail_obj() {
-		#removes remote objects and add failed items to fail array
-		remove_remote_obj
-		failed[$i]=$dbname
-		let i++
-		continue
+function check_status_file() {
+	if [ ! -s $status_file ]; then
+		echo "Status file was empty, no backups remain in loop"
+		
+	else
+		echo "Status file was not empty, report to nagios"
+
+	fi
+		rm $status_file 2> /dev/null
+
+}
+
+function prev_script_run() {
+		#kills previous script and reports to nagios
+		killvar=`ps -ef | grep $0 |grep -v $$ | grep -v grep | awk '{print $2}'`
+	if [ -z "$killvar" ]; then
+		echo "No previous script running"
+	else
+		kill -9 $killvar
+		echo "Killed previous process report to nagios"
+	fi
+}
+
+function set_name_obj() {
+		db="$dbname"
+		chown_user="${db%_*}:${db%_*}"
+	if [ $is_ftp == 1 ]; then
+		dbfilepath=$folder/sftp/$db/$backup
+	else
+		dbfilepath=$folder/nonftp/$db/$backup
+	fi
+		set_date
+		dbsend=$dbfilepath/$db.$date
+		dbsend_md5=$dbsend.md5
+}
+
+function set_date() {
+		date=`date '+%F_%T'`
+		#date_log=`date '+%b %d %R:%S'`
+}
+
+function dump_database_obj() {
+		#Creating folders if needed
+		mkdir="mkdir -p ${dbfilepath}"
+	if [ ! -d ${dbfilepath} ]; then
+		$mkdir
+    	$ssh "$mkdir"
+    fi
+    	#dumping database and creating md5sum
+		touch $dbsend
+		md5sum $dbsend > $dbsend_md5
+}
+
+function check_dump_obj() {
+	#Still to come, check if dump is valid. Similar to the check_send if statement
+	#Removes completed dump from status file
+		sed -i '/'$db'/d' $status_file
+}
+
+function send_backup_obj() {
+		#send backups
+		$scp$dbsend $target$dbsend
 }
 
 function check_send_obj() {
@@ -73,14 +164,21 @@ function check_send_obj() {
 
 }
 
+#### Third tier functions that second tier use ####
+
+function add_fail_obj() {
+		#removes remote objects and add failed items to fail array
+		remove_remote_obj
+		failed[$i]=$db
+		let i++
+		continue
+}
+
+
 function set_ftp_settings() {
 		$ftp_ssh "sudo chown $chown_user $dbsend* ; sudo chmod 400 $dbsend*"
 }
 
-function send_backup_obj() {
-		#send backups
-		$scp$dbsend $target$dbsend
-}
 
 function remove_local_obj() {
 		#Add .done to files that are complete and transfered on local and removes previous backup
@@ -100,84 +198,7 @@ function remove_old_obj() {
 		$ssh "find $dbfilepath -name "*.$(date -d "$rm_time $backup_type ago" "+%F")*" -exec rm {} \;"
 }
 
-function prev_script_run() {
-		#kills previous script and reports to nagios
-		killvar=`ps -ef | grep $0 |grep -v $$ | grep -v grep | awk '{print $2}'`
-	if [ -z "$killvar" ]; then
-		echo "No previous script running"
-	else
-		kill -9 $killvar
-		echo "Killed previous process report to nagios"
-	fi
-}
-
-function check_status_file() {
-	if [ ! -s $status_file ]; then
-		echo "Status file was empty, no backups remain in loop"
-		
-	else
-		echo "Status file was not empty, report to nagios"
-
-	fi
-		rm $status_file 2> /dev/null
-
-}
-
-function dump_database_obj() {
-		#Creating folders if needed
-		dbfilepath=$folder$dbname/$backup
-		mkdir="mkdir -p ${dbfilepath}"
-	if [ ! -d ${dbfilepath} ]; then
-		$mkdir
-    	$ssh "$mkdir"
-    fi
-    	#dumping database and creating md5sum
-		set_date
-		dbsend=$dbfilepath/$dbname.$date
-		dbsend_md5=$dbsend.md5
-		touch $dbsend
-		md5sum $dbsend > $dbsend_md5
-}
-
-function check_dump_obj() {
-	#Still to come, check if dump is valid. Similar to the check_send if statement
-	#Removes completed dump from status file
-		sed -i '/'$dbname'/d' $status_file
-}
-
-function send_backup() {
-	for dbname in $send_array; do
-		#Status is used for if statement to see if its first or second time backup runs
-		status=0
-		#dump database
-		dump_database_obj
-		#check the dump
-		check_dump_obj
-		#Sending database
-		send_backup_obj
-		#Check if send was complete
-		echo "This is send_backup func" "Ftp is set to $is_ftp"
-		check_send_obj
-		echo $dbname "was run from send_backup"
-	done
-}
-
-function failed_backup() {
-	for dbname in ${failed[*]}; do
-		#Status is used for if statement to see if its first or second time backup runs
-		status=1
-		#dump database
-		dump_database_obj
-		#check the dump
-		check_dump_obj
-		#Sending database
-		send_backup_obj
-		#Check if send was complete
-		echo "This is failed_backup func" "Ftp is set to $is_ftp"
-		check_send_obj
-		echo $dbname "was run from failed"
-	done
-}
+#### Main script that calls functions ####
 
 while [ $# -ge 1 ];do
 	case $1 in
@@ -209,9 +230,9 @@ prev_script_run
 if [ ${#ftp[@]} -gt 0 ]; then
 	#Adds array to a status file
 	printf "%s\n" ${ftp[*]} >> $status_file
-    	send_array="${ftp[*]}"
-    	is_ftp="1"
-    	send_backup
+    send_array="${ftp[*]}"
+	is_ftp="1"
+	send_backup
 	failed_backup
 	#This will empty the fail array
 	failed=
@@ -220,9 +241,9 @@ fi
 if [ ${#dbs[@]} -gt 0 ]; then
 	#Adds array to a status file
 	printf "%s\n" ${dbs[*]} >> $status_file
-    	send_array="${dbs[*]}"
-    	is_ftp="0"
-    	send_backup
+    send_array="${dbs[*]}"
+	is_ftp="0"
+	send_backup
 	failed_backup
 	#This will empty the fail array
 	failed=
