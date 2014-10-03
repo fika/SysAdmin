@@ -4,7 +4,6 @@
 #############################
 
 function settings() {
-		#User is current user who runs script, and remote serveruser
 		target="$USER@$ip:"
 		ssh="ssh $USER@$ip"
 		ftp_ssh="ssh -qt $USER@$ip"
@@ -17,43 +16,27 @@ function settings() {
 		f=0
 }
 
+function dump_data() {
+		set_name_obj
+		dump_database_obj
+		check_dump_obj
+		send_dump_obj
+		check_send_obj
+		log_entry="$db successfully backed up" send_log
+}
+
 function send_backup() {
 	for dbname in $send_array; do
 		#Status is used for if statement to see if its first or second time backup runs
 		status=0
-		#Sets namestandards
-		set_name_obj
-		#dump database
-		dump_database_obj
-		#check the dump
-		check_dump_obj
-		#Sending database
-		send_backup_obj
-		#Check if send was complete
-		#Temporary echos for debugging
-		echo "This is send_backup func" "Ftp is set to $is_ftp"
-		check_send_obj
-		echo $db "was run from send_backup"
+		dump_data
 	done
 }
 
 function failed_backup() {
 	for dbname in ${failed[*]}; do
-		#Status is used for if statement to see if its first or second time backup runs
 		status=1
-		#Sets namestandards
-		set_name_obj
-		#dump database
-		dump_database_obj
-		#check the dump
-		check_dump_obj
-		#Sending database
-		send_backup_obj
-		#Check if send was complete
-		#Temporary echos for debugging
-		echo "This is failed_backup func" "Ftp is set to $is_ftp"
-		check_send_obj
-		echo $db "was run from failed"
+		dump_data
 	done
 }
 
@@ -62,11 +45,11 @@ function failed_backup() {
 ##############################################################
 
 function check_log() {
-	#Add logrotate also?
 	if [ ! -s $log_file ]; then
 		touch $log_file
 		log_entry="Log file was created" send_log
 	fi
+		log_entry="Script started" send_log
 }
 
 function send_log() {
@@ -75,7 +58,7 @@ function send_log() {
 }
 
 function check_status_file() {
-		#Checks if there is a previous status file
+	#Looks if there is anything in the temporary status file
 	if [ -s $status_file ]; then
 		log_entry="Status file was not empty, the following dumps was not valid: $(cat $status_file)" send_log
 
@@ -85,7 +68,6 @@ function check_status_file() {
 }
 
 function prev_script_run() {
-		#kills previous script and reports to nagios
 		killvar=`ps -ef | grep $0 |grep -v $$ | grep -v grep | awk '{print $2}'`
 	if [ ! -z "$killvar" ]; then
 		kill -9 $killvar
@@ -119,24 +101,20 @@ function dump_database_obj() {
 		$mkdir
     	$ssh "$mkdir"
     fi
-    	#dumping database and creating md5sum
 		touch $dbsend
 		md5sum $dbsend > $dbsend_md5
 }
 
 function check_dump_obj() {
-	#Still to come, check if dump is valid. Similar to the check_send if statement
-	#Removes completed dump from status file
+		#Removes completed dump from status file
 		sed -i '/'$db'/d' $status_file
 }
 
-function send_backup_obj() {
-		#send backups
+function send_dump_obj() {
 		$scp$dbsend $target$dbsend
 }
 
 function check_send_obj() {
-		#ssh and compares md5 files
 		$ssh "md5sum $dbsend > $dbsend_md5"
 		$ssh "cat $dbsend_md5" | diff - "$dbsend_md5"
 		#checks md5, and if its first or second time it runs
@@ -148,13 +126,11 @@ function check_send_obj() {
 				log_entry="Md5 check failed twice on $dbsend" send_log ;;
 			esac
 	else
-		#If the target is ftp, mod file with ftp settings
 		if [ $is_ftp == 1 ]; then
 			set_ftp_settings
 		fi			
-		#When all is complete, remove previous local backup and mark this one as done
+		#If md5 checks out, remove previous local backup and look for old backups on remote
 		remove_local_obj
-		#When all is complete, remove old enough objects on remote
 		remove_old_obj
 	fi
 
@@ -219,7 +195,7 @@ function backup_type_obj() {
 }
 
 #### Main script that calls functions ####
-#### Ex running, ./script --type weekly --ip 10.10.10.10 --db "customer1_db customer2_db" --ftp "customer3_db"
+#### Ex running, ./script --type weekly --ip 10.10.10.10 --db "customer1_db customer2_db" --ftp "customer3_db" ####
 
 while [ $# -ge 1 ];do
 	case $1 in
@@ -253,24 +229,23 @@ prev_script_run
 if [ ${#ftp[@]} -gt 0 ]; then
 	#Adds array to a status file
 	printf "%s\n" ${ftp[*]} >> $status_file
-    send_array="${ftp[*]}"
+    	send_array="${ftp[*]}"
 	is_ftp="1"
 	send_backup
 	failed_backup
-	#This will empty the fail array
 	failed=
 fi
 
 if [ ${#dbs[@]} -gt 0 ]; then
 	#Adds array to a status file
 	printf "%s\n" ${dbs[*]} >> $status_file
-    send_array="${dbs[*]}"
+    	send_array="${dbs[*]}"
 	is_ftp="0"
 	send_backup
 	failed_backup
-	#This will empty the fail array
 	failed=
 fi
 
-#Checks if status file is empty, temp echos
+#Checks if status file is empty
 check_status_file
+log_entry="Script ended" send_log
