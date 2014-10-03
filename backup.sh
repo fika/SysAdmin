@@ -1,6 +1,22 @@
 #!/bin/bash
+#############################
+### First Tier functions ####
+#############################
 
-### First Tier functions
+function settings() {
+		#User is current user who runs script, and remote serveruser
+		target="$USER@$ip:"
+		ssh="ssh $USER@$ip"
+		ftp_ssh="ssh -qt $USER@$ip"
+		folder="/home/$USER/backups/"
+		scp="scp -q "
+		log_file="/var/log/$0/$0.log"
+		status_file="/tmp/status.tmp"
+		i=0
+		n=0
+		f=0
+}
+
 function send_backup() {
 	for dbname in $send_array; do
 		#Status is used for if statement to see if its first or second time backup runs
@@ -14,6 +30,7 @@ function send_backup() {
 		#Sending database
 		send_backup_obj
 		#Check if send was complete
+		#Temporary echos for debugging
 		echo "This is send_backup func" "Ftp is set to $is_ftp"
 		check_send_obj
 		echo $db "was run from send_backup"
@@ -33,34 +50,34 @@ function failed_backup() {
 		#Sending database
 		send_backup_obj
 		#Check if send was complete
+		#Temporary echos for debugging
 		echo "This is failed_backup func" "Ftp is set to $is_ftp"
 		check_send_obj
 		echo $db "was run from failed"
 	done
 }
 
-function settings() {
-		#User is current user who runs script, and remote serveruser
-		target="$USER@$ip:"
-		ssh="ssh $USER@$ip"
-		ftp_ssh="ssh -qt $USER@$ip"
-		folder="/home/$USER/backups/"
-		scp="scp -q "
-		status_file="/tmp/status.tmp"
-		i=0
-		n=0
-		f=0
+##############################################################
+#### Second tier functions, called mainly from first tier ####
+##############################################################
+
+function check_log() {
+	#Add logrotate also?
+	if [ ! -s $log_file ]; then
+		touch $log_file
+		log_entry="Log file was created" send_log
+	fi
 }
 
-#### Second tier functions, called mainly from first tier ####
+function send_log() {
+		set_date
+		echo "$date_log | $log_entry" >> $log_file
+}
 
 function check_status_file() {
 		#Checks if there is a previous status file
-	if [ ! -s $status_file ]; then
-		echo "Status file was empty, no backups remain in loop"
-		
-	else
-		echo "Status file was not empty, report to nagios"
+	if [ -s $status_file ]; then
+		log_entry="Status file was not empty, the following dumps was not valid: $(cat $status_file)" send_log
 
 	fi
 		rm $status_file 2> /dev/null
@@ -70,11 +87,9 @@ function check_status_file() {
 function prev_script_run() {
 		#kills previous script and reports to nagios
 		killvar=`ps -ef | grep $0 |grep -v $$ | grep -v grep | awk '{print $2}'`
-	if [ -z "$killvar" ]; then
-		echo "No previous script running"
-	else
+	if [ ! -z "$killvar" ]; then
 		kill -9 $killvar
-		echo "Killed previous process report to nagios"
+		log_entry="Script was running, killed $killvar" send_log
 	fi
 }
 
@@ -94,7 +109,7 @@ function set_name_obj() {
 
 function set_date() {
 		date=`date '+%F_%T'`
-		#date_log=`date '+%b %d %R:%S'`
+		date_log=`date '+%Y %b %d %R:%S'`
 }
 
 function dump_database_obj() {
@@ -130,7 +145,7 @@ function check_send_obj() {
 				0)
 					add_fail_obj ;;
 				1)
-				echo "Backup failed two times, report to nagios" ;;
+				log_entry="Md5 check failed twice on $dbsend" send_log ;;
 			esac
 	else
 		#If the target is ftp, mod file with ftp settings
@@ -144,11 +159,13 @@ function check_send_obj() {
 	fi
 
 }
-
+##############################################################
 #### Third tier functions, called mainly from second tier ####
+##############################################################
 
 function add_fail_obj() {
 		#removes remote objects and add failed items to fail array
+		log_entry="Md5 check failed, resending $dbsend" send_log 
 		remove_remote_obj
 		failed[$i]=$db
 		let i++
@@ -225,6 +242,8 @@ done
 #Importing settings
 settings
 
+#Check and rotate log file 
+check_log
 #Checks if there is a previous status file
 check_status_file
 
