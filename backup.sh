@@ -103,14 +103,29 @@ function dump_database_obj() {
     	$ssh "$mkdir"
     fi
     if [[ ! $(ls $dbfilepath | grep $dbsend) ]]; then
-		echo "temp" > $dbsend
-		md5sum $dbsend > $dbsend_md5
+    	/usr/pgsql-9.3/bin/pg_dump --username vivo -o $db | gzip > $dbsend
+		dump_ret=${PIPESTATUS[0]}
+		return $dump_ret
 	fi
 }
 
 function check_dump_obj() {
 		#Removes completed dump from status file
+	if [ $? -eq 0 ]; then
+		md5sum $dbsend > $dbsend_md5
 		sed -i '/'$db'/d' $status_file
+	else
+		case $status in
+			0)
+				remove_local_fail_obj
+				add_fail_md5_obj
+				log_entry="Dump check failed on $db, removing local and retrying" send_log ;;
+			1)
+				remove_local_fail_obj
+				log_entry="Dump check failed twice on $db" send_log ;;
+		esac
+
+	fi
 }
 
 function send_dump_obj() {
@@ -124,16 +139,18 @@ function check_send_obj() {
 	if [ $? != 0 ]; then
 			case $status in
 				0)
-					add_fail_md5_obj ;;
+					remove_remote_obj
+					add_fail_md5_obj
+					log_entry="Md5 check failed on $db, removing remote and retrying" send_log ;;
 				1)
-				log_entry="Md5 check failed twice on $db" send_log ;;
+					remove_remote_obj
+					log_entry="Md5 check failed twice on $db" send_log ;;
 			esac
 	else
 		if [ $is_ftp == 1 ]; then
 			set_ftp_settings
 		fi			
 		#If md5 checks out, remove previous local backup and look for old backups on remote
-		remove_local_obj
 		remove_old_obj
 	fi
 
@@ -144,8 +161,6 @@ function check_send_obj() {
 
 function add_fail_md5_obj() {
 		#removes remote objects and add failed items to fail array
-		log_entry="Md5 check failed on $db, removing remote and retrying" send_log
-		remove_remote_obj
 		failed[$i]=$db
 		let i++
 		continue
@@ -157,16 +172,8 @@ function set_ftp_settings() {
 }
 
 
-function remove_local_obj() {
-		#Add .done to files that are complete and transfered on local and removes previous backup
-		find $dbfilepath -name "*.done" -exec rm {} \;
-		mv "$dbsend" "$dbsend"".done"
-		mv "$dbsend_md5" "$dbsend_md5"".done"
-}
-
 function remove_local_fail_obj() {
-		#Remove remote objects
-		#Is not in use yet
+		#Remove local failed dump
 		rm $dbsend
 }
 
@@ -176,6 +183,10 @@ function remove_remote_obj() {
 }
 
 function remove_old_obj() {
+		#Add .done to files that are complete and transfered on local and removes previous backup
+		find $dbfilepath -name "*.done" -exec rm {} \;
+		mv "$dbsend" "$dbsend"".done"
+		mv "$dbsend_md5" "$dbsend_md5"".done"
 		backup_type_obj
 		#Use find to remove old backups on remote server
 		$ssh "find $dbfilepath -name "*.$(date -d "$rm_time $backup_type ago" "+%F")*" -exec rm {} \;"
@@ -245,7 +256,7 @@ function run_backup() {
 if [ ${#ftp[@]} -gt 0 ]; then
 	#Adds array to a status file
 	printf "%s\n" ${ftp[*]} >> $status_file
-    send_array="${ftp[*]}"
+    	send_array="${ftp[*]}"
 	is_ftp="1"
 	run_backup
 fi
@@ -253,7 +264,7 @@ fi
 if [ ${#dbs[@]} -gt 0 ]; then
 	#Adds array to a status file
 	printf "%s\n" ${dbs[*]} >> $status_file
-    send_array="${dbs[*]}"
+    	send_array="${dbs[*]}"
 	is_ftp="0"
 	run_backup
 fi
