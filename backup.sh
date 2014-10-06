@@ -80,7 +80,7 @@ function set_name_obj() {
 		#Sets namestandards
 		db="$dbname"
 		chown_user="${db%_*}:${db%_*}"
-	if [ $is_ftp == 1 ]; then
+	if [ $is_ftp -eq 1 ]; then
 		dbfilepath=$folder/sftp/$db/$backup
 	else
 		dbfilepath=$folder/nonftp/$db/$backup
@@ -118,11 +118,12 @@ function check_dump_obj() {
 		case $status in
 			0)
 				remove_local_fail_obj
-				add_fail_md5_obj
-				log_entry="Dump check failed on $db, removing local and retrying" send_log ;;
+				log_entry="Dump check failed on $db, removing local and retrying" send_log
+				add_fail_md5_obj ;;
 			1)
 				remove_local_fail_obj
-				log_entry="Dump check failed twice on $db" send_log ;;
+				log_entry="Dump check failed twice on $db" send_log 
+				continue ;;
 		esac
 
 	fi
@@ -130,24 +131,26 @@ function check_dump_obj() {
 
 function send_dump_obj() {
 		$scp$dbsend $target$dbsend
+		$ssh "md5sum $dbsend > $dbsend_md5"
 }
 
-function check_send_obj() {
-		$ssh "md5sum $dbsend > $dbsend_md5"
+function check_send_obj() {		
 		$ssh "cat $dbsend_md5" | diff - "$dbsend_md5"
 		#checks md5, and if its first or second time it runs
 	if [ $? != 0 ]; then
 			case $status in
 				0)
 					remove_remote_obj
-					add_fail_md5_obj
-					log_entry="Md5 check failed on $db, removing remote and retrying" send_log ;;
+					
+					log_entry="Md5 check failed on $db, removing remote and retrying" send_log
+					add_fail_md5_obj ;;
 				1)
 					remove_remote_obj
-					log_entry="Md5 check failed twice on $db" send_log ;;
+					log_entry="Md5 check failed twice on $db" send_log
+					continue ;;
 			esac
 	else
-		if [ $is_ftp == 1 ]; then
+		if [ $is_ftp -eq 1 ]; then
 			set_ftp_settings
 		fi			
 		#If md5 checks out, remove previous local backup and look for old backups on remote
@@ -201,15 +204,12 @@ function backup_type_obj() {
         	w | weekly )
                 backup_type="weeks"
                 rm_time="8" ;;
-        	m | montly )
+        	m | monthly )
                 backup_type="months"
                 rm_time="18" ;;
         	y | yearly )
                 backup_type="years"
                 rm_time="10" ;;
-        	z | zero ) #This is for temporary file-remove
-                backup_type="days"
-                rm_time="0" ;;
 	esac
 }
 
@@ -256,7 +256,7 @@ function run_backup() {
 if [ ${#ftp[@]} -gt 0 ]; then
 	#Adds array to a status file
 	printf "%s\n" ${ftp[*]} >> $status_file
-    	send_array="${ftp[*]}"
+	send_array="${ftp[*]}"
 	is_ftp="1"
 	run_backup
 fi
@@ -264,7 +264,7 @@ fi
 if [ ${#dbs[@]} -gt 0 ]; then
 	#Adds array to a status file
 	printf "%s\n" ${dbs[*]} >> $status_file
-    	send_array="${dbs[*]}"
+	send_array="${dbs[*]}"
 	is_ftp="0"
 	run_backup
 fi
