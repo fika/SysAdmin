@@ -7,7 +7,7 @@ function settings() {
 		target="$USER@$ip:"
 		ssh="ssh $USER@$ip"
 		ftp_ssh="ssh -qt $USER@$ip"
-		folder="/home/$USER/backups/"
+		folder="/home/$USER/backups"
 		scp="scp -q "
 		log_file="/var/log/$0/$0.log"
 		status_file="/tmp/status.tmp"
@@ -17,6 +17,7 @@ function settings() {
 }
 
 function dump_data() {
+		set_name_obj
 		dump_database_obj
 		check_dump_obj
 		send_dump_obj
@@ -28,8 +29,6 @@ function send_backup() {
 	for dbname in $send_array; do
 		#Status is used for if statement to see if its first or second time backup runs
 		status=0
-		#Set name standards in first so its same throughout whole script
-		set_name_obj
 		dump_data
 	done
 }
@@ -42,9 +41,9 @@ function failed_dump() {
 }
 
 
-##############################################################
-#### Second tier functions, called mainly from first tier ####
-##############################################################
+###############################
+#### Second tier functions ####
+###############################
 
 function check_log() {
 	if [ ! -s $log_file ]; then
@@ -92,7 +91,7 @@ function set_name_obj() {
 }
 
 function set_date() {
-		date=`date '+%F_%T'`
+		date=`date '+%F'`
 		date_log=`date '+%b %d %R:%S'`
 }
 
@@ -103,7 +102,7 @@ function dump_database_obj() {
 		$mkdir
     	$ssh "$mkdir"
     fi
-    if [ ! -s $dbsend ]; then
+    if [[ ! $(ls $dbfilepath | grep $dbsend) ]]; then
 		echo "temp" > $dbsend
 		md5sum $dbsend > $dbsend_md5
 	fi
@@ -139,9 +138,9 @@ function check_send_obj() {
 	fi
 
 }
-##############################################################
-#### Third tier functions, called mainly from second tier ####
-##############################################################
+##############################
+#### Third tier functions ####
+##############################
 
 function add_fail_md5_obj() {
 		#removes remote objects and add failed items to fail array
@@ -167,6 +166,7 @@ function remove_local_obj() {
 
 function remove_local_fail_obj() {
 		#Remove remote objects
+		#Is not in use yet
 		rm $dbsend
 }
 
@@ -202,7 +202,9 @@ function backup_type_obj() {
 	esac
 }
 
+##########################################
 #### Main script that calls functions ####
+##########################################
 #### Ex running, ./script --type weekly --ip 10.10.10.10 --db "customer1_db customer2_db" --ftp "customer3_db" ####
 
 while [ $# -ge 1 ];do
