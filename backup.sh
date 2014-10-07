@@ -9,7 +9,8 @@ function settings() {
 		ftp_ssh="ssh -qt $USER@$ip"
 		folder="/home/$USER/backups"
 		scp="scp -q "
-		log_file="/var/log/$0/$0.log"
+		file="$(basename $0)"
+		log_file="/var/log/$file/$file.log"
 		status_file="/tmp/status.tmp"
 		i=0
 		n=0
@@ -50,7 +51,8 @@ function check_log() {
 		touch $log_file
 		log_entry="Log file was created" send_log
 	fi
-		log_entry="Script started" send_log
+		backup_type_obj
+		log_entry="Script started, $backup backup" send_log
 }
 
 function send_log() {
@@ -141,7 +143,6 @@ function check_send_obj() {
 			case $status in
 				0)
 					remove_remote_obj
-					
 					log_entry="Md5 check failed on $db, removing remote and retrying" send_log
 					add_fail_md5_obj ;;
 				1)
@@ -197,31 +198,27 @@ function remove_old_obj() {
 
 function backup_type_obj() {
 	#This will determine, how find will look for files
-	case $backup in
-        	d | daily )
-                backup_type="days"
-                rm_time="14" ;;
-        	w | weekly )
-                backup_type="weeks"
-                rm_time="8" ;;
-        	m | monthly )
-                backup_type="months"
-                rm_time="18" ;;
-        	y | yearly )
-                backup_type="years"
-                rm_time="10" ;;
-	esac
+	if [[ $(date +%d) -eq 01 ]]; then 
+		backup="monthly"
+		backup_type="months"
+		rm_time="18" 
+	elif [[ $(date +%u) -eq 6 ]]; then 
+		backup="weekly"
+		backup_type="weeks"
+		rm_time="8"
+	else
+		backup="daily" 
+		backup_type="days"
+		rm_time="14"
+	fi
 }
 
 ##########################################
 #### Main script that calls functions ####
 ##########################################
-#### Ex running, ./script --type weekly --ip 10.10.10.10 --db "customer1_db customer2_db" --ftp "customer3_db" ####
 
 while [ $# -ge 1 ];do
 	case $1 in
-	-t | --type) #New, daily, weekly, montly                                                                                                                                                                        
-		backup="$2" ;;
 	-i | --ip) #The remote IP                                                                                                                                                       
 		ip="$2" ;;
 	-d | --db) #Databases to backup                                                                                                                                                                        
@@ -232,8 +229,8 @@ while [ $# -ge 1 ];do
 		let f++;;
 	*)
 		check_usage $1 ;;
-    esac
-    shift 2
+	esac
+	shift 2
 done
 
 #Importing settings
@@ -262,7 +259,6 @@ if [ ${#ftp[@]} -gt 0 ]; then
 fi
 
 if [ ${#dbs[@]} -gt 0 ]; then
-	#Adds array to a status file
 	printf "%s\n" ${dbs[*]} >> $status_file
 	send_array="${dbs[*]}"
 	is_ftp="0"
