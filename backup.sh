@@ -7,7 +7,7 @@
 function settings() {
 		target="$USER@$ip:"
 		ssh="ssh $USER@$ip"
-		ftp_ssh="ssh -qt $USER@$ip"
+		ftp_ssh="ssh -qtt $USER@$ip"
 		folder="/home/$USER/backups"
 		scp="scp -q "
 		file="$(basename $0)"
@@ -94,7 +94,11 @@ function set_name_obj() {
 }
 
 function set_date() {
+	if [ -z $old_date ]; then
 		date=`date '+%F'`
+	else
+		date="$old_date"
+	fi
 		date_log=`date '+%b %d %R:%S'`
 }
 
@@ -173,7 +177,7 @@ function add_fail_md5_obj() {
 
 function set_ftp_settings() {
 		#Chown and chmod remote ftp file
-		$ftp_ssh "sudo chown $chown_user $dbsend* ; sudo chmod 400 $dbsend*"
+		$ftp_ssh "sudo chown $chown_user $dbsend* ; sudo chmod 400 $dbsend*" 2> /dev/null
 }
 
 
@@ -198,12 +202,16 @@ function remove_old_obj() {
 }
 
 function backup_type_obj() {
-	#This will determine, how find will look for files
-	if [[ $(date +%d) -eq 01 ]]; then 
+	#This will determine the backup type.
+	if [[ "$(date +%m)" -eq "01" ]] && [[ "$(date +%d)" -eq "01" ]]; then
+		backup="yearly"
+		backup_type="years"
+		rm_time="10"
+	elif [[ "$(date +%d)" -eq "01" ]]; then 
 		backup="monthly"
 		backup_type="months"
 		rm_time="18" 
-	elif [[ $(date +%u) -eq 6 ]]; then 
+	elif [[ "$(date +%u)" -eq "6" ]]; then 
 		backup="weekly"
 		backup_type="weeks"
 		rm_time="8"
@@ -228,6 +236,8 @@ while [ $# -ge 1 ];do
 	-f | --ftp) #Databases to backup to ftp                                                                                                                                                      
 		ftp[$f]="$2"
 		let f++;;
+	-o | --old)
+    	old_date="$2";;
 	*)
 		check_usage $1 ;;
 	esac
@@ -250,6 +260,8 @@ function run_backup() {
 	failed_dump
 	failed=
 }
+
+
 
 if [ ${#ftp[@]} -gt 0 ]; then
 	#Adds array to a status file
