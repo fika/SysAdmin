@@ -1,4 +1,5 @@
 #!/bin/bash
+#Ex, call script ./script.sh --ip 192.168.122.53 --db "customer_db customer2_db" from crontab every day
 #############################
 ### First Tier functions ####
 #############################
