@@ -5,13 +5,11 @@
 #############################
 
 function settings() {
-		target="$USER@$ip:"
+		target="$USER@$ip"
 		ssh="ssh $USER@$ip"
 		ftp_ssh="ssh -qtt $USER@$ip"
 		folder="/home/$USER/backups"
-		scp="scp -q "
-		file="$(basename $0)"
-		log_file="/var/log/$file/$file.log"
+		scp="scp -q"
 		status_file="/tmp/status.tmp"
 		i=0
 		n=0
@@ -20,8 +18,10 @@ function settings() {
 
 function dump_data() {
 		set_name_obj
+	if [ -z $old_date ]; then
 		dump_database_obj
 		check_dump_obj
+	fi
 		send_dump_obj
 		check_send_obj
 		log_entry="$db successfully backed up" send_log
@@ -42,17 +42,18 @@ function failed_dump() {
 	done
 }
 
-
 ###############################
 #### Second tier functions ####
 ###############################
 
 function check_log() {
+		backup_type_obj
+		file="$(basename $0).$backup.log"
+		log_file="/var/log/$(basename $0)/$file"
 	if [ ! -s $log_file ]; then
 		touch $log_file
 		log_entry="Log file was created" send_log
 	fi
-		backup_type_obj
 		log_entry="Script started, $backup backup" send_log
 }
 
@@ -99,15 +100,14 @@ function set_date() {
 	else
 		date="$old_date"
 	fi
-		date_log=`date '+%b %d %R:%S'`
+		date_log=`date '+%a %b %d %R:%S'`
 }
 
 function dump_database_obj() {
 		#Creating folders if needed
-		mkdir="mkdir -p ${dbfilepath}"
 	if [ ! -d ${dbfilepath} ]; then
-		$mkdir
-    	$ssh "$mkdir"
+		mkdir -p ${dbfilepath}
+    	$ssh "mkdir -p ${dbfilepath}"
     fi
     if [[ ! $(ls $dbfilepath | grep $dbsend) ]]; then
     	/usr/pgsql-9.3/bin/pg_dump --username vivo -o $db | gzip > $dbsend
@@ -137,7 +137,11 @@ function check_dump_obj() {
 }
 
 function send_dump_obj() {
-		$scp$dbsend $target$dbsend
+		$scp $dbsend $target:$dbsend
+		if [ $? != 0 ]; then
+			log_entry="$db.$date, no such file" send_log
+			continue
+		fi
 		$ssh "md5sum $dbsend > $dbsend_md5"
 }
 
@@ -180,7 +184,6 @@ function set_ftp_settings() {
 		$ftp_ssh "sudo chown $chown_user $dbsend* ; sudo chmod 400 $dbsend*" 2> /dev/null
 }
 
-
 function remove_local_fail_obj() {
 		#Remove local failed dump
 		rm $dbsend
@@ -196,18 +199,20 @@ function remove_old_obj() {
 		find $dbfilepath -name "*.done" -exec rm {} \;
 		mv "$dbsend" "$dbsend"".done"
 		mv "$dbsend_md5" "$dbsend_md5"".done"
+	if [ -z $old_date ]; then
 		backup_type_obj
 		#Use find to remove old backups on remote server
 		$ssh "find $dbfilepath -name "*.$(date -d "$rm_time $backup_type ago" "+%F")*" -exec rm {} \;"
+	fi
 }
 
 function backup_type_obj() {
 	#This will determine the backup type.
-	if [[ "$(date +%m)" -eq "01" ]] && [[ "$(date +%d)" -eq "01" ]]; then
+	if [[ "$(date +'%-m')" -eq "1" ]] && [[ "$(date +'%-d')" -eq "1" ]]; then
 		backup="yearly"
 		backup_type="years"
 		rm_time="10"
-	elif [[ "$(date +%d)" -eq "01" ]]; then 
+	elif [[ "$(date +'%-d')" -eq "1" ]]; then 
 		backup="monthly"
 		backup_type="months"
 		rm_time="18" 
@@ -261,18 +266,20 @@ function run_backup() {
 	failed=
 }
 
-
-
 if [ ${#ftp[@]} -gt 0 ]; then
 	#Adds array to a status file
-	printf "%s\n" ${ftp[*]} >> $status_file
+	if [ -z $old_date ]; then
+		printf "%s\n" ${ftp[*]} >> $status_file
+	fi
 	send_array="${ftp[*]}"
 	is_ftp="1"
 	run_backup
 fi
 
 if [ ${#dbs[@]} -gt 0 ]; then
-	printf "%s\n" ${dbs[*]} >> $status_file
+	if [ -z $old_date ]; then
+		printf "%s\n" ${dbs[*]} >> $status_file
+	fi
 	send_array="${dbs[*]}"
 	is_ftp="0"
 	run_backup
