@@ -202,7 +202,14 @@ function remove_old_obj() {
 	if [ -z $old_date ]; then
 		backup_type_obj
 		#Use find to remove old backups on remote server
-		$ssh "find $dbfilepath -name "*.$(date -d "$rm_time $backup_type ago" "+%F")*" -exec rm {} \;"
+		remove_arr=$($ssh "ls $dbfilepath | grep -v ".md5" | awk -F'[(.)]' '{print \$2}'")
+		for x in ${remove_arr[*]}; do
+		        old=$(($(echo $(date --date="$(date '+%F')" +%s)) - $(echo $(date --date="$x" +%s))))
+		                if [ "$old" -ge "$rm_time" ]; then
+		                	$ssh "rm $dbfilepath/$db.$x*"
+		                	log_entry="Removed $db.$x" send_log
+		                fi
+		done
 	fi
 }
 
@@ -210,20 +217,16 @@ function backup_type_obj() {
 	#This will determine the backup type.
 	if [[ "$(date +'%-m')" -eq "1" ]] && [[ "$(date +'%-d')" -eq "1" ]]; then
 		backup="yearly"
-		backup_type="years"
 		rm_time="10"
 	elif [[ "$(date +'%-d')" -eq "1" ]]; then 
 		backup="monthly"
-		backup_type="months"
-		rm_time="18" 
+		rm_time="47350800" 
 	elif [[ "$(date +%u)" -eq "6" ]]; then 
 		backup="weekly"
-		backup_type="weeks"
-		rm_time="8"
+		rm_time="4842000"
 	else
 		backup="daily" 
-		backup_type="days"
-		rm_time="14"
+		rm_time="1213200"
 	fi
 }
 
