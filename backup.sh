@@ -217,7 +217,7 @@ function backup_type_obj() {
 	#This will determine the backup type.
 	if [[ "$(date +'%-m')" -eq "1" ]] && [[ "$(date +'%-d')" -eq "1" ]]; then
 		backup="yearly"
-		rm_time="10"
+		rm_time="315619200"
 	elif [[ "$(date +'%-d')" -eq "1" ]]; then 
 		backup="monthly"
 		rm_time="47350800" 
